@@ -1,3 +1,8 @@
+import SDC = require("statsd-client");
+
+let sdc = new SDC( { host: 'localhost' });
+
+
 enum SentimentStatus { Happy, Sad, Netural }
 interface SentimentResult {
     sentiment: SentimentStatus
@@ -23,6 +28,7 @@ interface KafkaProducer {
 
 let kafkaProducer: KafkaProducer = {
     produce(msg: string, topic: string, partition: number): boolean {
+        sdc.increment('outgoing_events_count');
         console.info(`producing ${msg} to ${topic} in ${partition}`);
         return true;
     }
@@ -32,6 +38,7 @@ let senService: SentimentAnalysisService = new SentimentAnalysisService();
 
 let tweetsInformation: string[] = ["I'm happy :) ", "I'm sad :("]
 for (let index = 0; index < tweetsInformation.length; index++) {
+    sdc.increment('incoming_requests_count');
     let tweetInformation = tweetsInformation[index]
     let sentimentResult = senService.calculateSentiment(tweetInformation)
     kafkaProducer.produce(JSON.stringify(sentimentResult), 'sentiment_topic', 0);
